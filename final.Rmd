@@ -1,0 +1,96 @@
+---
+title: "ORIE 4630 Final Project: Communication Services"
+author: "Benjamin Tang, Ashwin Tayur, Erin Xu"
+date: "2024-12-14"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(matlib)
+library(stats)
+library(tseries)
+library(quantmod)
+library(MASS)
+```
+
+```{r, error=TRUE}
+# between the most popular ETFs tracking the communications sector, VOX was the only one that started before 2017
+getSymbols("VOX", from = "2017-01-01", to = "2019-12-31")
+
+# these are the top 3 largest holdings in VOX, and also the largest companies in the sector
+getSymbols("GOOG", from = "2017-01-01", to = "2019-12-31")
+getSymbols("META", from = "2017-01-01", to = "2019-12-31")
+getSymbols("NFLX", from = "2017-01-01", to = "2019-12-31")
+```
+## Question 1
+
+*Calculate daily returns for your industry for 2017-2019. Download two types
+of data for this - the industry level series on Yahoo Finance, and the top 3 or
+4 companies in the sector. Justify the ticker choice you made to represent the
+industries (e.g., the most famous ones, largest ones, ones you are particularly
+curious about, etc.). Plot the cumulative performance of the industry and the
+individual assets.*
+
+```{r}
+VOX_returns <- dailyReturn(VOX$VOX.Adjusted, type = "arithmetic")[-1]
+GOOG_returns <- dailyReturn(GOOG$GOOG.Adjusted, type = "arithmetic")[-1]
+META_returns <- dailyReturn(META$META.Adjusted, type = "arithmetic")[-1]
+NFLX_returns <- dailyReturn(NFLX$NFLX.Adjusted, type = "arithmetic")[-1]
+
+returns <- merge(VOX_returns, GOOG_returns, META_returns, NFLX_returns)
+colnames(returns) <- c("VOX", "GOOG", "META", "NFLX")
+head(returns)
+
+VOX_cum <- cumprod(1 + VOX_returns)
+GOOG_cum <- cumprod(1 + GOOG_returns)
+META_cum <- cumprod(1 + META_returns)
+NFLX_cum <- cumprod(1 + NFLX_returns)
+
+plot(index(VOX_cum), VOX_cum, type = "l", col = "black", lwd = 1, 
+     xlab = "Date", ylab = "Cumulative Returns", main = "Cumulative Returns", 
+     ylim = range(c(VOX_cum, GOOG_cum, META_cum, NFLX_cum), na.rm = TRUE))
+lines(index(GOOG_cum), GOOG_cum, col = "green", lwd = 1)
+lines(index(META_cum), META_cum, col = "red", lwd = 1)
+lines(index(NFLX_cum), NFLX_cum, col = "blue", lwd = 1)
+legend("topleft", legend = c("VOX", "GOOG", "META", "NFLX"), 
+       col = c("black", "green", "red", "blue"), lty = 1, lwd = 1)
+```
+
+## Question 2
+
+*Report summary statistics like mean and sd for daily returns by year and
+industry i.e., in two Nx2 table with periods along the columns and assets along
+the rows. N denotes the number of assets (i.e., number of individual companies
+and the overall series). One table is for reporting mean, the other for sd.*
+
+```{r}
+returns_by_year <- split(returns, format(index(returns), "%Y"))
+
+mean_table <- sapply(returns_by_year, function(year_data) colMeans(year_data, na.rm = TRUE))
+sd_table <- sapply(returns_by_year, function(year_data) apply(year_data, 2, sd, na.rm = TRUE))
+
+cat("Mean of Daily Returns, by Year (2017-2019):\n")
+print(mean_table)
+cat("\nStandard Deviation of Daily Returns, by Year (2017-2019):\n")
+print(sd_table)
+```
+
+## Question 3
+
+*Use techniques we learnt in portfolio optimization to create an optimal portfolio
+of the individual companies in your industry. Comment on the riskiness of
+the assets, the overall series and your constructed portfolio in the Markowitz
+portfolio optimization world (meaning using standard deviations and Sharpe
+ratios).*
+
+```{r}
+
+```
