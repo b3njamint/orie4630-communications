@@ -3,9 +3,9 @@ title: "ORIE 4630 Final Project: Communication Services"
 author: "Benjamin Tang, Ashwin Tayur, Erin Xu"
 date: "2024-12-14"
 output:
-  html_document: default
-  word_document: default
   pdf_document: default
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -21,7 +21,7 @@ library(quantmod)
 library(MASS)
 ```
 
-```{r, error=TRUE}
+```{r}
 # between the most popular ETFs tracking the communications sector, VOX was the only one that started before 2017
 getSymbols("VOX", from = "2017-01-01", to = "2019-12-31")
 
@@ -29,6 +29,10 @@ getSymbols("VOX", from = "2017-01-01", to = "2019-12-31")
 getSymbols("GOOG", from = "2017-01-01", to = "2019-12-31")
 getSymbols("META", from = "2017-01-01", to = "2019-12-31")
 getSymbols("NFLX", from = "2017-01-01", to = "2019-12-31")
+
+# using the 3-month treasury bill as the risk free rate
+DTB3 <- read.csv(paste0("./DTB3.csv"), header = TRUE)
+DTB3 <- DTB3[!is.na(DTB3$DTB3),]
 ```
 ## Question 1
 
@@ -91,6 +95,72 @@ the assets, the overall series and your constructed portfolio in the Markowitz
 portfolio optimization world (meaning using standard deviations and Sharpe
 ratios).*
 
-```{r}
+I am using the 3-month treasury bills as the risk-free rate.
+https://fred.stlouisfed.org/series/DTB3
 
+SOFR was only caluclated since 04-2018.
+
+```{r}
+mu.vec <- colMeans(returns, na.rm = TRUE)
+sd.vec <- apply(returns, 2, sd, na.rm = TRUE)
+trading_days <- nrow(returns)
+rf_annual <- mean(DTB3$DTB3[DTB3$observation >= as.Date("2017-01-01") & DTB3$observation <= as.Date("2019-12-31")], na.rm = TRUE)
+rf <- rf_annual / trading_days / 100
+Sigma = cov(returns[,-1])
 ```
+
+***Calculate the tangency portfolio***
+```{r}
+num = solve(Sigma)%*%(mu.vec[-1]-rf)
+den = as.numeric(t(rep(1,3))%*%solve(Sigma)%*%(mu.vec[-1]-rf))
+tan.vec = num/den
+mu_tan = as.numeric(crossprod(tan.vec, mu.vec[-1]))
+sd_tan = sqrt(as.numeric(t(tan.vec)%*%Sigma%*%tan.vec))
+
+tanpf = rbind(mu_tan, sd_tan, tan.vec)
+rownames(tanpf) = c("mean", "sd", "GOOG", "META", "NFLX")
+colnames(tanpf) = c("tangency pf")
+
+print(round(tanpf,3))
+
+voxpf = rbind(mu.vec[1], sd.vec[1])
+rownames(voxpf) = c("mean", "sd")
+print(voxpf)
+```
+***Calculate the Sharpe Ratios***
+```{r}
+top.mat = cbind(2*Sigma, rep(1, 3))
+bot.vec = c(rep(1, 3), 0)
+Am.mat = rbind(top.mat, bot.vec)
+b.vec = c(rep(0, 3), 1)
+zm.mat = solve(Am.mat)%*%b.vec
+wmin.vec = zm.mat[1:3,1]
+mu_min = as.numeric(crossprod(wmin.vec, mu.vec[-1]))
+sd_min = sqrt(as.numeric(t(wmin.vec)%*%Sigma%*%wmin.vec))
+
+SR_VOX = (mu.vec[1]-rf)/sd.vec[1]
+SR_GOOG = (mu.vec[2]-rf)/sd.vec[2]
+SR_META = (mu.vec[3]-rf)/sd.vec[3]
+SR_NFLX = (mu.vec[4]-rf)/sd.vec[4]
+SR_min = (mu_min-rf)/sd_min
+SR_tan = (tanpf[1] - rf)/tanpf[2]
+sr = rbind(SR_VOX, SR_GOOG,SR_META, SR_NFLX, SR_min, SR_tan)
+rownames(sr) = c("SR_VOX", "SR_GOOG","SR_META", "SR_NFLX", "SR min var", "SR tangency")
+colnames(sr) = c("Sharpe Ratios")
+round(sr*100,3)
+```
+***Analysis***
+Looking at the individuals stocks, we see that Netflix has the highest Sharpe Ratio of 6.368,
+and thus has the most attractive risk-adjusted return. However, Google and Meta are not far
+behind at 5.411 and 4.881. Thus, the tangential portfolio puts the highest weight on NFLX, but
+still a significant proportion in the others. All of them are above 3 and thus very good stocks to invest in.
+The Sharpe Ratio of the tangency portfolio is higher than each individual stock, at 6.870. This is much
+higher than the Sharpe Ratio of VOX, which is at -0.060.
+
+The tangency porfolio performs quite well, averaging 0.1% growth per trading day but with a
+high standard deviation of 1.7%. Compared to the VOX, which averages a much lower 0.002% growth per trading day
+and with a smaller standard deviation of 1.0%. VOX is a safer investment for sure, but gives much worse
+expected returns, even when adjusted for risk.
+
+# TODO: Make graph, check to make sure my calculations (0.1%, 0.002%, etc. are correct and per day)
+
