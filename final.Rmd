@@ -33,8 +33,13 @@ getSymbols("META", from = "2017-01-01", to = "2019-12-31")
 getSymbols("NFLX", from = "2017-01-01", to = "2019-12-31")
 
 # using the 3-month treasury bill as the risk free rate
-DTB3 <- read.csv(paste0("./DTB3.csv"), header = TRUE)
-DTB3 <- DTB3[!is.na(DTB3$DTB3),]
+ DTB3 <- read.csv(paste0("./DTB3.csv"), header = TRUE)
+ DTB3 <- DTB3[!is.na(DTB3$DTB3),]
+
+# risk free rate (1-month treasury bill)
+tbill1mo= getSymbols("DGS1MO", from = "2017-01-01", to = "2019-12-31", src="FRED", auto.assign = FALSE)
+names(tbill1mo) = tolower(names(tbill1mo))
+tbill1mo= na.omit(tbill1mo[,'dgs1mo'])
 ```
 ## Question 1
 
@@ -97,6 +102,7 @@ the assets, the overall series and your constructed portfolio in the Markowitz
 portfolio optimization world (meaning using standard deviations and Sharpe
 ratios).*
 
+update this:
 I am using the 3-month treasury bills as the risk-free rate.
 https://fred.stlouisfed.org/series/DTB3
 
@@ -106,7 +112,9 @@ SOFR was only caluclated since 04-2018.
 mu.vec <- colMeans(returns, na.rm = TRUE)
 sd.vec <- apply(returns, 2, sd, na.rm = TRUE)
 trading_days <- nrow(returns)
-rf_annual <- mean(DTB3$DTB3[DTB3$observation >= as.Date("2017-01-01") & DTB3$observation <= as.Date("2019-12-31")], na.rm = TRUE)
+
+#rf_annual <- mean(DTB3$DTB3[DTB3$observation >= as.Date("2017-01-01") & DTB3$observation <= as.Date("2019-12-31")], na.rm = TRUE)
+rf_annual <- mean(tbill1mo)
 rf <- rf_annual / trading_days / 100
 Sigma = cov(returns[,-1])
 ```
@@ -236,3 +244,144 @@ until the end of 2021, from which it performs worse. By the end of 2022, the cum
 returns for our portfolio and VOX end up to be approximately the same.
 
 # TODO: Is this sufficient? Might be useful to analyze excess returns or sharpe ratios (?)
+
+## Question 5
+```{r}
+# sp500 index. GSPC = Global Standard & Poor's Composite
+sp500 = getSymbols("^GSPC", from = "2017-01-01", to = "2019-12-31", auto.assign = FALSE)
+names(sp500) = tolower(names(sp500))
+sp500 = sp500[,'gspc.adjusted']
+
+names(GOOG) = tolower(names(GOOG))
+goog = GOOG[,'goog.adjusted']
+names(META) = tolower(names(META))
+meta = META[,'meta.adjusted']
+names(NFLX) = tolower(names(NFLX))
+nflx = NFLX[,'nflx.adjusted']
+
+rm = monthlyReturn(sp500$gspc.adjusted, type = "arithmetic")
+names(rm) = c("mkt")
+rf = tbill1mo*30/(360*100)
+names(rf) = c("rf")
+
+ri_goog = monthlyReturn(goog$goog.adjusted, type = "arithmetic")
+ri_meta = monthlyReturn(meta$meta.adjusted, type = "arithmetic")
+ri_nflx = monthlyReturn(nflx$nflx.adjusted, type = "arithmetic")
+names(ri_goog) = c("goog")
+names(ri_meta) = c("meta")
+names(ri_nflx) = c("nflx")
+
+tmp1 = merge.xts(rm,rf,join="inner")
+tmp2 = merge.xts(tmp1,ri_goog,join="inner")
+tmp3 = merge.xts(tmp2,ri_meta,join="inner")
+all_ret = merge.xts(tmp3,ri_nflx,join="inner")
+
+ex_goog = all_ret[,'goog']-all_ret[,'rf']
+ex_meta = all_ret[,'meta']-all_ret[,'rf']
+ex_nflx = all_ret[,'nflx']-all_ret[,'rf']
+ex_mkt = all_ret[,'mkt']-all_ret[,'rf']
+fit_goog = lm(ex_goog~ex_mkt)
+fit_meta = lm(ex_meta~ex_mkt)
+fit_nflx = lm(ex_nflx~ex_mkt)
+
+beta_goog = round(fit_goog$coefficients[2],2)
+beta_meta = round(fit_meta$coefficients[2],2)
+beta_nflx = round(fit_nflx$coefficients[2],2)
+alpha_goog = round(fit_goog$coefficients[1],2)
+alpha_meta = round(fit_meta$coefficients[1],2)
+alpha_nflx = round(fit_nflx$coefficients[1],2)
+
+alpha_beta = matrix(c(alpha_goog, alpha_meta, alpha_nflx, beta_goog, beta_meta, beta_nflx),2,3,byrow = TRUE)
+colnames(alpha_beta) = c("GOOG", "META", "NFLX")
+rownames(alpha_beta) = c("Alpha", "Beta")
+
+alpha_beta
+```
+
+## Question 6
+```{r}
+sp500_new = getSymbols("^GSPC", from = "2020-01-01", to = "2022-12-31", auto.assign = FALSE)
+names(sp500_new) = tolower(names(sp500_new))
+sp500_new = sp500_new[,'gspc.adjusted']
+
+names(GOOG_new) = tolower(names(GOOG_new))
+goog_new = GOOG_new[,'goog.adjusted']
+names(META_new) = tolower(names(META_new))
+meta_new = META_new[,'meta.adjusted']
+names(NFLX_new) = tolower(names(NFLX_new))
+nflx_new = NFLX_new[,'nflx.adjusted']
+
+rm = monthlyReturn(sp500_new$gspc.adjusted, type = "arithmetic")
+names(rm) = c("mkt")
+tbill1mo_new= getSymbols("DGS1MO", from = "2020-01-01", to = "2022-12-31", src="FRED", auto.assign = FALSE)
+names(tbill1mo_new) = tolower(names(tbill1mo_new))
+tbill1mo_new = na.omit(tbill1mo_new[,'dgs1mo'])
+rf_new = tbill1mo_new*30/(360*100)
+names(rf_new) = c("rf")
+
+ri_goog_new = monthlyReturn(goog_new$goog.adjusted, type = "arithmetic")
+ri_meta_new = monthlyReturn(meta_new$meta.adjusted, type = "arithmetic")
+ri_nflx_new = monthlyReturn(nflx_new$nflx.adjusted, type = "arithmetic")
+names(ri_goog_new) = c("goog")
+names(ri_meta_new) = c("meta")
+names(ri_nflx_new) = c("nflx")
+
+tmp1 = merge.xts(rm,rf_new,join="inner")
+tmp2 = merge.xts(tmp1,ri_goog_new,join="inner")
+tmp3 = merge.xts(tmp2,ri_meta_new,join="inner")
+all_ret_new = merge.xts(tmp3,ri_nflx_new,join="inner")
+
+ex_goog_new = all_ret_new[,'goog']-all_ret_new[,'rf']
+ex_meta_new = all_ret_new[,'meta']-all_ret_new[,'rf']
+ex_nflx_new = all_ret_new[,'nflx']-all_ret_new[,'rf']
+ex_mkt_new = all_ret_new[,'mkt']-all_ret_new[,'rf']
+fit_goog_new = lm(ex_goog_new~ex_mkt)
+fit_meta_new = lm(ex_meta_new~ex_mkt)
+fit_nflx_new = lm(ex_nflx_new~ex_mkt)
+
+beta_goog_new = round(fit_goog_new$coefficients[2],2)
+beta_meta_new = round(fit_meta_new$coefficients[2],2)
+beta_nflx_new = round(fit_nflx_new$coefficients[2],2)
+alpha_goog_new = round(fit_goog_new$coefficients[1],6)
+alpha_meta_new = round(fit_meta_new$coefficients[1],6)
+alpha_nflx_new = round(fit_nflx_new$coefficients[1],6)
+
+alpha_beta_new = matrix(c(alpha_goog_new, alpha_meta_new, alpha_nflx_new, beta_goog_new, beta_meta_new, beta_nflx_new),2,3,byrow = TRUE)
+colnames(alpha_beta_new) = c("GOOG", "META", "NFLX")
+rownames(alpha_beta_new) = c("Alpha", "Beta")
+
+alpha_beta_new
+```
+
+## Question 7
+### Assuming an initial investment of S = $1000.
+```{r}
+s <- 1000
+calc_var_es <- function(alpha, ret) {
+  res <- numeric(2)
+  res[1] <- -s*as.numeric(quantile(ret,alpha))
+  L = -s*ret
+  res[2] <- mean(L[L>res[1]])
+  names(res) <- c("var", "es")
+  return(res)
+}
+
+goog_var_es = calc_var_es(0.05, goog)
+meta_var_es = calc_var_es(0.05, meta)
+nflx_var_es = calc_var_es(0.05, nflx)
+all_var_es = matrix(c(goog_var_es["var"], meta_var_es["var"], nflx_var_es["var"], goog_var_es["es"], meta_var_es["es"], nflx_var_es["es"]), 2, 3)
+rownames(all_var_es) = c("VaR", "ES")
+colnames(all_var_es) = c("GOOG", "META", "NFLX")
+all_var_es
+```
+
+## Question 8
+```{r}
+goog_var_es_new = calc_var_es(0.05, goog_new)
+meta_var_es_new = calc_var_es(0.05, meta_new)
+nflx_var_es_new = calc_var_es(0.05, nflx_new)
+all_var_es_new = matrix(c(goog_var_es_new["var"], meta_var_es_new["var"], nflx_var_es_new["var"], goog_var_es_new["es"], meta_var_es_new["es"], nflx_var_es_new["es"]), 2, 3)
+rownames(all_var_es_new) = c("VaR", "ES")
+colnames(all_var_es_new) = c("GOOG", "META", "NFLX")
+all_var_es_new
+```
