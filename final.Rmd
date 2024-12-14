@@ -50,6 +50,13 @@ industries (e.g., the most famous ones, largest ones, ones you are particularly
 curious about, etc.). Plot the cumulative performance of the industry and the
 individual assets.*
 
+For the industry, we chose to use Vanguard Communication Services Index Fund ETF (VOX).
+VOX is one of the largest ETFs in the sector, and has been traded since October 2004. 
+For comparison,the SPDR Communications Sector ETF (XLC), only began trading in July, 2018.  
+
+For the top companies, we chose the three largest in the sector, namely, GOOG, META, and NFLX.
+These three companies are the largest holdings in VOX, and the largest companies by market cap in the sector.
+
 ```{r}
 VOX_returns <- dailyReturn(VOX$VOX.Adjusted, type = "arithmetic")[-1]
 GOOG_returns <- dailyReturn(GOOG$GOOG.Adjusted, type = "arithmetic")[-1]
@@ -241,11 +248,23 @@ Looking at the plots above, we found that the cumulative returns for our portfol
 performs much better than VOX in 2017-2019, confirming our expectations from the previous
 question. However, in 2020-2022, the tangency portfolio seems to outperform VOX somewhat
 until the end of 2021, from which it performs worse. By the end of 2022, the cumulative
-returns for our portfolio and VOX end up to be approximately the same.
+returns for our portfolio and VOX end up to be approximately the same. 
+A major factor in the sharp decline of the tangency portfolio is the struggles of Netflix following the pandemic.
+The pandemic caused a significant growth in streaming, as movie theaters closed. 
+This led to many companies creating their own streaming platforms, which eroded the industry dominance of Netflix.
+The pandemic can be seen as a black swan for Netflix, as it led to a far more competitive industry,
+causing Netflix to lose 51% over the year 2022. As the tangency portfolio weights Netflix more than VOX
+(47.4% vs. 4.55%), the black swan affects the tangency portfolio far more.
 
 # TODO: Is this sufficient? Might be useful to analyze excess returns or sharpe ratios (?)
+# TODO: Tried to add analysis for the 2021 drop, its mostly Netflix losing 60% that quarter
 
 ## Question 5
+
+*Use CAPM to estimate the alphas and betas for the individual companies, your
+constructed pf, and the overall series with respect to SP500 during 2017-2019.
+Comment on your findings*
+
 ```{r}
 # sp500 index. GSPC = Global Standard & Poor's Composite
 sp500 = getSymbols("^GSPC", from = "2017-01-01", to = "2019-12-31", auto.assign = FALSE)
@@ -258,47 +277,84 @@ names(META) = tolower(names(META))
 meta = META[,'meta.adjusted']
 names(NFLX) = tolower(names(NFLX))
 nflx = NFLX[,'nflx.adjusted']
+names(VOX) = tolower(names(VOX))
+vox = VOX[, 'vox.adjusted']
 
 rm = monthlyReturn(sp500$gspc.adjusted, type = "arithmetic")
 names(rm) = c("mkt")
 rf = tbill1mo*30/(360*100)
 names(rf) = c("rf")
 
+tang = tan.vec[1] * goog + tan.vec[2] * meta + tan.vec[3] * nflx
+
 ri_goog = monthlyReturn(goog$goog.adjusted, type = "arithmetic")
 ri_meta = monthlyReturn(meta$meta.adjusted, type = "arithmetic")
 ri_nflx = monthlyReturn(nflx$nflx.adjusted, type = "arithmetic")
+ri_vox =  monthlyReturn(vox$vox.adjusted, type = "arithmetic")
+ri_tang =  monthlyReturn(tang, type = "arithmetic")
 names(ri_goog) = c("goog")
 names(ri_meta) = c("meta")
 names(ri_nflx) = c("nflx")
+names(ri_vox) = c("vox")
+names(ri_tang) = c("tang")
 
 tmp1 = merge.xts(rm,rf,join="inner")
 tmp2 = merge.xts(tmp1,ri_goog,join="inner")
 tmp3 = merge.xts(tmp2,ri_meta,join="inner")
-all_ret = merge.xts(tmp3,ri_nflx,join="inner")
+tmp4 = merge.xts(tmp3,ri_vox,join="inner")
+tmp5 = merge.xts(tmp4,ri_tang,join="inner")
+all_ret = merge.xts(tmp5,ri_nflx,join="inner")
 
 ex_goog = all_ret[,'goog']-all_ret[,'rf']
 ex_meta = all_ret[,'meta']-all_ret[,'rf']
 ex_nflx = all_ret[,'nflx']-all_ret[,'rf']
+ex_vox = all_ret[,'vox']-all_ret[,'rf']
+ex_tang = all_ret[,'tang']-all_ret[,'rf']
 ex_mkt = all_ret[,'mkt']-all_ret[,'rf']
 fit_goog = lm(ex_goog~ex_mkt)
 fit_meta = lm(ex_meta~ex_mkt)
 fit_nflx = lm(ex_nflx~ex_mkt)
+fit_vox = lm(ex_vox~ex_mkt)
+fit_tang = lm(ex_tang~ex_mkt)
 
-beta_goog = round(fit_goog$coefficients[2],2)
-beta_meta = round(fit_meta$coefficients[2],2)
-beta_nflx = round(fit_nflx$coefficients[2],2)
-alpha_goog = round(fit_goog$coefficients[1],2)
-alpha_meta = round(fit_meta$coefficients[1],2)
-alpha_nflx = round(fit_nflx$coefficients[1],2)
+beta_goog = round(fit_goog$coefficients[2],3)
+beta_meta = round(fit_meta$coefficients[2],3)
+beta_nflx = round(fit_nflx$coefficients[2],3)
+beta_vox = round(fit_vox$coefficients[2], 3)
+beta_tang = round(fit_tang$coefficients[2], 3)
 
-alpha_beta = matrix(c(alpha_goog, alpha_meta, alpha_nflx, beta_goog, beta_meta, beta_nflx),2,3,byrow = TRUE)
-colnames(alpha_beta) = c("GOOG", "META", "NFLX")
-rownames(alpha_beta) = c("Alpha", "Beta")
+alpha_goog = round(fit_goog$coefficients[1],3)
+alpha_meta = round(fit_meta$coefficients[1],3)
+alpha_nflx = round(fit_nflx$coefficients[1],3)
+alpha_vox = round(fit_vox$coefficients[1], 3)
+alpha_tang = round(fit_tang$coefficients[1], 3)
+prob_goog = round(summary(fit_goog)$coefficients[1, "Pr(>|t|)"], 3)
+prob_meta = round(summary(fit_meta)$coefficients[1, "Pr(>|t|)"], 3)
+prob_nflx = round(summary(fit_nflx)$coefficients[1, "Pr(>|t|)"], 3)
+prob_tang = round(summary(fit_tang)$coefficients[1, "Pr(>|t|)"], 3)
+prob_vox = round(summary(fit_vox)$coefficients[1, "Pr(>|t|)"], 3)
+
+alpha_beta = matrix(c(alpha_goog, alpha_meta, alpha_nflx, alpha_vox, alpha_tang, beta_goog, beta_meta, beta_nflx, beta_vox, beta_tang, prob_goog, prob_meta, prob_nflx, prob_vox, prob_tang),3,5,byrow = TRUE)
+colnames(alpha_beta) = c("GOOG", "META", "NFLX", "VOX", "Tangency")
+rownames(alpha_beta) = c("Alpha", "Beta", "Pr(>|t|)")
 
 alpha_beta
 ```
 
+Using CAPM, we find that all three stocks do not have a significant alpha, which implies that CAPM holds for them. 
+The tangency portfolio also has an insignificant alpha. However, it appears VOX has a significant negative alpha.
+
+The Beta coefficient for GOOG shows that it has a similar systematic risk to the market, while the Betas for 
+META and NFLX both show higher systematic risk compared to the market. VOX has a beta less than 1, implying a lower systemic risk in relation to the market.
+The tangency protfolio has a beta greater than 1 as well, which is expected, as is is comprised of long-only positions of three stocks with beta greater than 1.
+
+# TODO: Anything else? Not sure what else to say
+
+
 ## Question 6
+*Use CAPM to estimate the betas for the individual companies, your con-
+structed pf, and the overall series with respect to SP500 during 2020-2022.
+Compare with the findings for 2017-2019*
 ```{r}
 sp500_new = getSymbols("^GSPC", from = "2020-01-01", to = "2022-12-31", auto.assign = FALSE)
 names(sp500_new) = tolower(names(sp500_new))
@@ -310,9 +366,14 @@ names(META_new) = tolower(names(META_new))
 meta_new = META_new[,'meta.adjusted']
 names(NFLX_new) = tolower(names(NFLX_new))
 nflx_new = NFLX_new[,'nflx.adjusted']
+names(VOX_new) = tolower(names(VOX_new))
+vox_new = VOX_new[, 'vox.adjusted']
 
-rm = monthlyReturn(sp500_new$gspc.adjusted, type = "arithmetic")
-names(rm) = c("mkt")
+tang_new = tan.vec[1] * goog_new + tan.vec[2] * meta_new + tan.vec[3] * nflx_new
+
+
+rm_new = monthlyReturn(sp500_new$gspc.adjusted, type = "arithmetic")
+names(rm_new) = c("mkt")
 tbill1mo_new= getSymbols("DGS1MO", from = "2020-01-01", to = "2022-12-31", src="FRED", auto.assign = FALSE)
 names(tbill1mo_new) = tolower(names(tbill1mo_new))
 tbill1mo_new = na.omit(tbill1mo_new[,'dgs1mo'])
@@ -322,36 +383,65 @@ names(rf_new) = c("rf")
 ri_goog_new = monthlyReturn(goog_new$goog.adjusted, type = "arithmetic")
 ri_meta_new = monthlyReturn(meta_new$meta.adjusted, type = "arithmetic")
 ri_nflx_new = monthlyReturn(nflx_new$nflx.adjusted, type = "arithmetic")
+ri_vox_new =  monthlyReturn(vox_new$vox.adjusted, type = "arithmetic")
+ri_tang_new =  monthlyReturn(tang_new, type = "arithmetic")
 names(ri_goog_new) = c("goog")
 names(ri_meta_new) = c("meta")
 names(ri_nflx_new) = c("nflx")
+names(ri_vox_new) = c("vox")
+names(ri_tang_new) = c("tang")
 
-tmp1 = merge.xts(rm,rf_new,join="inner")
+tmp1 = merge.xts(rm_new,rf_new,join="inner")
 tmp2 = merge.xts(tmp1,ri_goog_new,join="inner")
 tmp3 = merge.xts(tmp2,ri_meta_new,join="inner")
-all_ret_new = merge.xts(tmp3,ri_nflx_new,join="inner")
+tmp4 = merge.xts(tmp3,ri_tang_new,join="inner")
+tmp5 = merge.xts(tmp4,ri_vox_new,join="inner")
+all_ret_new = merge.xts(tmp5,ri_nflx_new,join="inner")
 
 ex_goog_new = all_ret_new[,'goog']-all_ret_new[,'rf']
 ex_meta_new = all_ret_new[,'meta']-all_ret_new[,'rf']
 ex_nflx_new = all_ret_new[,'nflx']-all_ret_new[,'rf']
+ex_vox_new = all_ret_new[,'vox']-all_ret_new[,'rf']
+ex_tang_new = all_ret_new[,'tang']-all_ret_new[,'rf']
 ex_mkt_new = all_ret_new[,'mkt']-all_ret_new[,'rf']
-fit_goog_new = lm(ex_goog_new~ex_mkt)
-fit_meta_new = lm(ex_meta_new~ex_mkt)
-fit_nflx_new = lm(ex_nflx_new~ex_mkt)
+fit_goog_new = lm(ex_goog_new~ex_mkt_new)
+fit_meta_new = lm(ex_meta_new~ex_mkt_new)
+fit_nflx_new = lm(ex_nflx_new~ex_mkt_new)
+fit_vox_new = lm(ex_vox_new~ex_mkt_new)
+fit_tang_new = lm(ex_tang_new~ex_mkt_new)
 
-beta_goog_new = round(fit_goog_new$coefficients[2],2)
-beta_meta_new = round(fit_meta_new$coefficients[2],2)
-beta_nflx_new = round(fit_nflx_new$coefficients[2],2)
-alpha_goog_new = round(fit_goog_new$coefficients[1],6)
-alpha_meta_new = round(fit_meta_new$coefficients[1],6)
-alpha_nflx_new = round(fit_nflx_new$coefficients[1],6)
+beta_goog_new = round(fit_goog_new$coefficients[2],3)
+beta_meta_new = round(fit_meta_new$coefficients[2],3)
+beta_nflx_new = round(fit_nflx_new$coefficients[2],3)
+beta_vox_new = round(fit_vox_new$coefficients[2], 3)
+beta_tang_new = round(fit_tang_new$coefficients[2], 3)
 
-alpha_beta_new = matrix(c(alpha_goog_new, alpha_meta_new, alpha_nflx_new, beta_goog_new, beta_meta_new, beta_nflx_new),2,3,byrow = TRUE)
-colnames(alpha_beta_new) = c("GOOG", "META", "NFLX")
-rownames(alpha_beta_new) = c("Alpha", "Beta")
+alpha_goog_new = round(fit_goog_new$coefficients[1],3)
+alpha_meta_new = round(fit_meta_new$coefficients[1],3)
+alpha_nflx_new = round(fit_nflx_new$coefficients[1],3)
+alpha_vox_new = round(fit_vox_new$coefficients[1], 3)
+alpha_tang_new = round(fit_tang_new$coefficients[1], 3)
+
+prob_goog_new = round(summary(fit_goog_new)$coefficients[1, "Pr(>|t|)"], 3)
+prob_meta_new = round(summary(fit_meta_new)$coefficients[1, "Pr(>|t|)"], 3)
+prob_nflx_new = round(summary(fit_nflx_new)$coefficients[1, "Pr(>|t|)"], 3)
+prob_tang_new = round(summary(fit_tang_new)$coefficients[1, "Pr(>|t|)"], 3)
+prob_vox_new = round(summary(fit_vox_new)$coefficients[1, "Pr(>|t|)"], 3)
+
+alpha_beta_new = matrix(c(alpha_goog_new, alpha_meta_new, alpha_nflx_new, alpha_vox_new, alpha_tang_new, beta_goog_new, beta_meta_new, beta_nflx_new, beta_vox_new, beta_tang_new, prob_goog_new, prob_meta_new, prob_nflx_new, prob_vox_new, prob_tang_new),3,5,byrow = TRUE)
+colnames(alpha_beta_new) = c("GOOG", "META", "NFLX", "VOX", "Tangency")
+rownames(alpha_beta_new) = c("Alpha", "Beta", "Pr(>|t|)")
 
 alpha_beta_new
 ```
+Compared to 2017-2019, there are some similarities and some differences. 
+While the Betas for META, and NFLX all remain above 1, they decreased significantly, from 1.383 and 1.709 to 1.089 and 1.107 respectively. 
+The Beta for GOOG also changed, jumping from 0.998, below 1, to 1.112, greater than 1. 
+The Beta for VOX also changed to be greater than 1. VOX has the biggest difference, as it now no longer has a statistically significant alpha.
+Interestingly, unlike in 2017-2019, the Beta for the tangency portfolio is lower than any of the sub-components. 
+
+#TODO: no idea what else to write.
+
 
 ## Question 7
 ### Assuming an initial investment of S = $1000.
