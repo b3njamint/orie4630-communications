@@ -179,7 +179,37 @@ high standard deviation of 1.7%. Compared to the VOX, which averages a much lowe
 and with a smaller standard deviation of 1.0%. VOX is a safer investment for sure, but gives much worse
 expected returns, even when adjusted for risk.
 
-# TODO: Make graph (Markowitz bullet), check to make sure my calculations (0.1%, 0.002%, etc. are correct and per day)
+```{r}
+#markowitz bullet with goog, meta, nflx
+n_pf = 5000
+set.seed(12345)
+w_goog = rnorm(n_pf)
+w_meta = rnorm(n_pf)
+w_nflx = 1 - w_goog - w_meta
+w = rbind(w_goog, w_meta, w_nflx)
+rownames(w) = asset.names = c("GOOG", "META", "NFLX")
+mu_p=matrix(NA,n_pf)
+sd_p=matrix(NA,n_pf)
+for (i in 1:n_pf) {
+  mu_p[i] = t(w[,i])%*%mu.vec[2:4]
+  sd_p[i] = sqrt(t(w[,i])%*%Sigma%*%w[,i])
+  i=i+1
+}
+ymax =1.2*max(mu_p)
+ymin =1.2*min(mu_p)
+xmax= max(sd_p)
+cex.val = 0.5
+plot(sd_p, mu_p,ylim=c(ymin, ymax), xlim=c(-0.01, xmax),
+ylab=expression(mu[p]), xlab=expression(sigma[p]),
+pch=16, col="grey", cex=cex.val, cex.lab=1.5)
+points(sd.vec[2:4], mu.vec[2:4], pch=16, cex=1.5, lwd=2, col="blue")
+points(c(0), c(rf), pch=16, cex=1.5, lwd=2, col="red")
+points(sd_tan, mu_tan, pch=16, cex=1.5, lwd=2, col="green")
+text(c(sd.vec[2:4], 0, sd_tan), c(mu.vec[2:4], rf, mu_tan), labels=c(asset.names, "rf", "Tangency"), pos=c(1, 4, 4, 4, 2), cex = 1, col="black")
+title("Feasible pfs with GOOG, META and NFLX (no weight restrictions)")
+
+```
+
 
 ## Question 4
 
@@ -444,6 +474,11 @@ Interestingly, unlike in 2017-2019, the Beta for the tangency portfolio is lower
 
 
 ## Question 7
+*Estimate and report the daily VaR and ES for the individual companies and the
+overall industry at 5% levels of significance using the non-parametric method
+for 2017-2029. Report the estimates in a compact table form. Comment on
+your findings.*
+
 ### Assuming an initial investment of S = $1000.
 ```{r}
 s <- 1000
@@ -456,9 +491,9 @@ calc_var_es <- function(alpha, ret) {
   return(res)
 }
 
-goog_var_es = calc_var_es(0.05, goog)
-meta_var_es = calc_var_es(0.05, meta)
-nflx_var_es = calc_var_es(0.05, nflx)
+goog_var_es = calc_var_es(0.05, dailyReturn(goog))
+meta_var_es = calc_var_es(0.05, dailyReturn(meta))
+nflx_var_es = calc_var_es(0.05, dailyReturn(nflx))
 all_var_es = matrix(c(goog_var_es["var"], meta_var_es["var"], nflx_var_es["var"], goog_var_es["es"], meta_var_es["es"], nflx_var_es["es"]), 2, 3)
 rownames(all_var_es) = c("VaR", "ES")
 colnames(all_var_es) = c("GOOG", "META", "NFLX")
@@ -466,12 +501,25 @@ all_var_es
 ```
 
 ## Question 8
+*Estimate and report the daily VaR and ES for the individual companies and the
+overall industry at 5% levels of significance using the non-parametric method
+for 2020-2022. Report the estimates in a compact table form. Compare with
+the findings for 2017-2019*
 ```{r}
-goog_var_es_new = calc_var_es(0.05, goog_new)
-meta_var_es_new = calc_var_es(0.05, meta_new)
-nflx_var_es_new = calc_var_es(0.05, nflx_new)
+goog_var_es_new = calc_var_es(0.05, dailyReturn(goog_new))
+meta_var_es_new = calc_var_es(0.05, dailyReturn(meta_new))
+nflx_var_es_new = calc_var_es(0.05, dailyReturn(nflx_new))
 all_var_es_new = matrix(c(goog_var_es_new["var"], meta_var_es_new["var"], nflx_var_es_new["var"], goog_var_es_new["es"], meta_var_es_new["es"], nflx_var_es_new["es"]), 2, 3)
 rownames(all_var_es_new) = c("VaR", "ES")
 colnames(all_var_es_new) = c("GOOG", "META", "NFLX")
 all_var_es_new
 ```
+
+#TODO: need to verify this is correct, changed inputs from price to return for 7/8
+
+## Question 9
+*Comment on your findings overall, meaning using portfolio optimization, 
+market betas, and the tail risk, and complement with any research/news you found
+online. Note 2020-2021 were pandemic years.*
+
+# TODO: 
