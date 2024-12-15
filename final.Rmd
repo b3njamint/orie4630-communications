@@ -381,10 +381,9 @@ alpha_beta
 ```
 
 Using CAPM, we find that all three stocks do not have a significant alpha, which implies that CAPM holds for them. 
-The tangency portfolio also has an insignificant alpha. However, it appears VOX has a significant negative alpha.
+The tangency portfolio and VOX also have insignificant alphas.
 
-The Beta coefficient for GOOG shows that it has a similar systematic risk to the market, while the Betas for 
-META and NFLX both show higher systematic risk compared to the market. VOX has a beta less than 1, implying a lower systemic risk in relation to the market.
+The Betas for GOOG, META and NFLX all show higher systematic risk compared to the market. VOX has a beta less than 1, implying a lower systemic risk in relation to the market.
 The tangency protfolio has a beta greater than 1 as well, which is expected, as is is comprised of long-only positions of three stocks with beta greater than 1.
 
 ## Question 6
@@ -471,10 +470,11 @@ rownames(alpha_beta_new) = c("Alpha", "Beta", "Pr(>|t|)")
 alpha_beta_new
 ```
 Compared to 2017-2019, there are some similarities and some differences. 
-While the Betas for META, and NFLX all remain above 1, they decreased significantly, from 1.383 and 1.709 to 1.089 and 1.107 respectively. 
-The Beta for GOOG also changed, jumping from 0.998, below 1, to 1.112, greater than 1. 
-The Beta for VOX also changed to be greater than 1. VOX has the biggest difference, as it now no longer has a statistically significant alpha.
-Interestingly, unlike in 2017-2019, the Beta for the tangency portfolio is lower than two of the three sub-components. The betas also varied a lot more in 2017-2019.
+While the Betas for GOOG and META both remain above 1, they decreased, from 1.333 and 1.277 to 1.090 and 1.244 respectively. 
+The Beta for NFLX also changed, falling from 1.699, above 1, to 0.987, less than 1. 
+The Beta for VOX interestingly saw almost no change in beta, moving from 0.946 to 0.948.
+Like in 2017-2019, the Beta for the tangency portfolio is between the three sub-components. The betas also varied a lot more in 2017-2019.
+Once again, there was no significant alpha.
 
 
 ## Question 7
