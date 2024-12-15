@@ -319,18 +319,18 @@ nflx = NFLX[,'nflx.adjusted']
 names(VOX) = tolower(names(VOX))
 vox = VOX[, 'vox.adjusted']
 
-rm = monthlyReturn(sp500$gspc.adjusted, type = "arithmetic")
+rm = dailyReturn(sp500$gspc.adjusted, type = "arithmetic")
 names(rm) = c("mkt")
-rf = tbill1mo*30/(360*100)
+rf = tbill1mo/(360*100)
 names(rf) = c("rf")
 
 tang = tan.vec[1] * goog + tan.vec[2] * meta + tan.vec[3] * nflx
 
-ri_goog = monthlyReturn(goog$goog.adjusted, type = "arithmetic")
-ri_meta = monthlyReturn(meta$meta.adjusted, type = "arithmetic")
-ri_nflx = monthlyReturn(nflx$nflx.adjusted, type = "arithmetic")
-ri_vox =  monthlyReturn(vox$vox.adjusted, type = "arithmetic")
-ri_tang =  tan.vec[1] * ri_goog + tan.vec[2] * ri_meta + tan.vec[3] * ri_nflx # monthlyReturn(tang, type = "arithmetic")
+ri_goog = dailyReturn(goog$goog.adjusted, type = "arithmetic")
+ri_meta = dailyReturn(meta$meta.adjusted, type = "arithmetic")
+ri_nflx = dailyReturn(nflx$nflx.adjusted, type = "arithmetic")
+ri_vox =  dailyReturn(vox$vox.adjusted, type = "arithmetic")
+ri_tang =  tan.vec[1] * ri_goog + tan.vec[2] * ri_meta + tan.vec[3] * ri_nflx # dailyReturn(tang, type = "arithmetic")
 names(ri_goog) = c("goog")
 names(ri_meta) = c("meta")
 names(ri_nflx) = c("nflx")
@@ -408,7 +408,7 @@ vox_new = VOX_new[, 'vox.adjusted']
 tang_new = tan.vec[1] * goog_new + tan.vec[2] * meta_new + tan.vec[3] * nflx_new
 
 
-rm_new = monthlyReturn(sp500_new$gspc.adjusted, type = "arithmetic")
+rm_new = dailyReturn(sp500_new$gspc.adjusted, type = "arithmetic")
 names(rm_new) = c("mkt")
 tbill1mo_new= getSymbols("DGS1MO", from = "2020-01-01", to = "2022-12-31", src="FRED", auto.assign = FALSE)
 names(tbill1mo_new) = tolower(names(tbill1mo_new))
@@ -416,11 +416,11 @@ tbill1mo_new = na.omit(tbill1mo_new[,'dgs1mo'])
 rf_new = tbill1mo_new*30/(360*100)
 names(rf_new) = c("rf")
 
-ri_goog_new = monthlyReturn(goog_new$goog.adjusted, type = "arithmetic")
-ri_meta_new = monthlyReturn(meta_new$meta.adjusted, type = "arithmetic")
-ri_nflx_new = monthlyReturn(nflx_new$nflx.adjusted, type = "arithmetic")
-ri_vox_new =  monthlyReturn(vox_new$vox.adjusted, type = "arithmetic")
-ri_tang_new =  tan.vec[1] * ri_goog_new + tan.vec[2] * ri_meta_new + tan.vec[3] * ri_nflx_new #monthlyReturn(tang_new, type = "arithmetic")
+ri_goog_new = dailyReturn(goog_new$goog.adjusted, type = "arithmetic")
+ri_meta_new = dailyReturn(meta_new$meta.adjusted, type = "arithmetic")
+ri_nflx_new = dailyReturn(nflx_new$nflx.adjusted, type = "arithmetic")
+ri_vox_new =  dailyReturn(vox_new$vox.adjusted, type = "arithmetic")
+ri_tang_new =  tan.vec[1] * ri_goog_new + tan.vec[2] * ri_meta_new + tan.vec[3] * ri_nflx_new #dailyReturn(tang_new, type = "arithmetic")
 names(ri_goog_new) = c("goog")
 names(ri_meta_new) = c("meta")
 names(ri_nflx_new) = c("nflx")
