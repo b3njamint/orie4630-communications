@@ -3,9 +3,9 @@ title: "ORIE 4630 Final Project: Communication Services"
 author: "Benjamin Tang, Ashwin Tayur, Erin Xu"
 date: "2024-12-14"
 output:
-  pdf_document: default
-  word_document: default
   html_document: default
+  word_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -453,7 +453,7 @@ alpha_beta_new
 Compared to 2017-2019, there are some similarities and some differences. 
 While the Betas for GOOG and META both remain above 1, they decreased, from 1.333 and 1.277 to 1.090 and 1.244 respectively. 
 The Beta for NFLX also changed, falling from 1.699, above 1, to 0.987, less than 1. 
-The Beta for VOX interestingly saw almost no change in beta, moving from 0.946 to 0.948.
+The Beta for VOX interestingly saw almost no change in beta, moving from 0.946 to 0.984.
 Like in 2017-2019, the Beta for the tangency portfolio is between the three sub-components. The betas also varied a lot more in 2017-2019.
 Once again, there was no significant alpha.
 
