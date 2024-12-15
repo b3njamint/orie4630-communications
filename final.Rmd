@@ -32,10 +32,6 @@ getSymbols("GOOG", from = "2017-01-01", to = "2019-12-31")
 getSymbols("META", from = "2017-01-01", to = "2019-12-31")
 getSymbols("NFLX", from = "2017-01-01", to = "2019-12-31")
 
-# using the 3-month treasury bill as the risk free rate
- DTB3 <- read.csv(paste0("./DTB3.csv"), header = TRUE)
- DTB3 <- DTB3[!is.na(DTB3$DTB3),]
-
 # risk free rate (1-month treasury bill)
 tbill1mo= getSymbols("DGS1MO", from = "2017-01-01", to = "2019-12-31", src="FRED", auto.assign = FALSE)
 names(tbill1mo) = tolower(names(tbill1mo))
@@ -89,6 +85,8 @@ industry i.e., in two Nx2 table with periods along the columns and assets along
 the rows. N denotes the number of assets (i.e., number of individual companies
 and the overall series). One table is for reporting mean, the other for sd.*
 
+### By year from 2017-2019
+
 ```{r}
 returns_by_year <- split(returns, format(index(returns), "%Y"))
 
@@ -96,11 +94,43 @@ mean_table <- sapply(returns_by_year, function(year_data) colMeans(year_data, na
 sd_table <- sapply(returns_by_year, function(year_data) apply(year_data, 2, sd, na.rm = TRUE))
 
 cat("Mean of Daily Returns, by Year (2017-2019):\n")
-print(mean_table)
+print(round(mean_table,3))
 cat("\nStandard Deviation of Daily Returns, by Year (2017-2019):\n")
-print(sd_table)
+print(round(sd_table,3))
 ```
 
+### By time period
+```{r}
+# Fetch next 3 years (2020-2022)
+VOX_new <- getSymbols("VOX", from = "2020-01-01", to = "2022-12-31", auto.assign = FALSE)
+GOOG_new <- getSymbols("GOOG", from = "2020-01-01", to = "2022-12-31", auto.assign = FALSE)
+META_new <- getSymbols("META", from = "2020-01-01", to = "2022-12-31", auto.assign = FALSE)
+NFLX_new <- getSymbols("NFLX", from = "2020-01-01", to = "2022-12-31", auto.assign = FALSE)
+
+VOX_returns_2020 <- dailyReturn(VOX_new$VOX.Adjusted, type = "arithmetic")[-1]
+GOOG_returns_2020 <- dailyReturn(GOOG_new$GOOG.Adjusted, type = "arithmetic")[-1]
+META_returns_2020 <- dailyReturn(META_new$META.Adjusted, type = "arithmetic")[-1]
+NFLX_returns_2020 <- dailyReturn(NFLX_new$NFLX.Adjusted, type = "arithmetic")[-1]
+
+returns_2020 <- merge(VOX_returns_2020, GOOG_returns_2020, META_returns_2020, NFLX_returns_2020)
+colnames(returns_2020) <- c("VOX", "GOOG", "META", "NFLX")
+
+# calculate mean, sd by period
+mu.vec <- colMeans(returns, na.rm = TRUE)
+sd.vec <- apply(returns, 2, sd, na.rm = TRUE)
+mu2020.vec <- colMeans(returns_2020, na.rm = TRUE)
+sd2020.vec <- apply(returns_2020, 2, sd, na.rm = TRUE)
+
+mu_table = cbind(round(mu.vec,3), round(mu2020.vec,3))
+colnames(mu_table) <- c("2017-2019", "2020-2022")
+cat("Mean of Daily Returns, by Time Period (2017-2019, 2020-2022):\n")
+mu_table
+
+sd_table <- cbind(round(sd.vec,3), round(sd2020.vec,3))
+colnames(sd_table) <- c("2017-2019", "2020-2022")
+cat("Standard Deviation of Daily Returns, by Time Period (2017-2019, 2020-2022):\n")
+sd_table
+```
 ## Question 3
 
 *Use techniques we learnt in portfolio optimization to create an optimal portfolio
@@ -109,18 +139,11 @@ the assets, the overall series and your constructed portfolio in the Markowitz
 portfolio optimization world (meaning using standard deviations and Sharpe
 ratios).*
 
-update this:
-I am using the 3-month treasury bills as the risk-free rate.
-https://fred.stlouisfed.org/series/DTB3
-
-SOFR was only caluclated since 04-2018.
+We are using the 1-month treasury bills as the risk-free rate.
 
 ```{r}
-mu.vec <- colMeans(returns, na.rm = TRUE)
-sd.vec <- apply(returns, 2, sd, na.rm = TRUE)
 trading_days <- nrow(returns)
 
-#rf_annual <- mean(DTB3$DTB3[DTB3$observation >= as.Date("2017-01-01") & DTB3$observation <= as.Date("2019-12-31")], na.rm = TRUE)
 rf_annual <- mean(tbill1mo)
 rf <- rf_annual / trading_days / 100
 Sigma = cov(returns[,-1])
@@ -142,8 +165,9 @@ print(round(tanpf,3))
 
 voxpf = rbind(mu.vec[1], sd.vec[1])
 rownames(voxpf) = c("mean", "sd")
-print(voxpf)
+print(round(voxpf,3))
 ```
+
 ### Calculate the Sharpe Ratios
 ```{r}
 top.mat = cbind(2*Sigma, rep(1, 3))
@@ -167,12 +191,15 @@ colnames(sr) = c("Sharpe Ratios")
 round(sr*100,3)
 ```
 ### Analysis
-Looking at the individuals stocks, we see that Netflix has the highest Sharpe Ratio of 6.368,
+Looking at the individuals stocks, we see that Netflix has the highest Sharpe Ratio of 6.370,
 and thus has the most attractive risk-adjusted return. However, Google and Meta are not far
-behind at 5.411 and 4.881. Thus, the tangential portfolio puts the highest weight on NFLX, but
+behind at 5.415 and 4.884. Thus, the tangential portfolio puts the highest weight on NFLX, but
 still a significant proportion in the others. All of them are above 3 and thus very good stocks to invest in.
-The Sharpe Ratio of the tangency portfolio is higher than each individual stock, at 6.870. This is much
-higher than the Sharpe Ratio of VOX, which is at -0.060.
+The Sharpe Ratio of the tangency portfolio is higher than each individual stock, at 6.873. This is much
+higher than the Sharpe Ratio of VOX, which is at -0.054.
+We also see that the returns are quite high, at 0.1%, 0.1%, and 0.2% per trading day for
+GOOG, META, NFLX respectively. The standard deviations however, are also higher, at 1.5%, 1.8%, 2.3%, respectively,
+indicating a rather high risk as well.
 
 The tangency porfolio performs quite well, averaging 0.1% growth per trading day but with a
 high standard deviation of 1.7%. Compared to the VOX, which averages a much lower 0.002% growth per trading day
@@ -229,20 +256,7 @@ tan_cum <- xts(tan_cum, order.by = index(returns[,-1]))
 
 ### 2020-2022
 ```{r}
-# Fetch next 3 years (2020-2022)
-VOX_new <- getSymbols("VOX", from = "2020-01-01", to = "2022-12-31", auto.assign = FALSE)
-GOOG_new <- getSymbols("GOOG", from = "2020-01-01", to = "2022-12-31", auto.assign = FALSE)
-META_new <- getSymbols("META", from = "2020-01-01", to = "2022-12-31", auto.assign = FALSE)
-NFLX_new <- getSymbols("NFLX", from = "2020-01-01", to = "2022-12-31", auto.assign = FALSE)
-
-VOX_returns_2020 <- dailyReturn(VOX_new$VOX.Adjusted, type = "arithmetic")[-1]
-GOOG_returns_2020 <- dailyReturn(GOOG_new$GOOG.Adjusted, type = "arithmetic")[-1]
-META_returns_2020 <- dailyReturn(META_new$META.Adjusted, type = "arithmetic")[-1]
-NFLX_returns_2020 <- dailyReturn(NFLX_new$NFLX.Adjusted, type = "arithmetic")[-1]
-
-returns_2020 <- merge(GOOG_returns_2020, META_returns_2020, NFLX_returns_2020)
-colnames(returns_2020) <- c("GOOG", "META", "NFLX")
-tan_returns_2020 <- rowSums(returns_2020 %*% tan.vec, na.rm = TRUE)
+tan_returns_2020 <- rowSums(returns_2020[,-1] %*% tan.vec, na.rm = TRUE)
 
 # Calculate cumulative returns
 VOX_cum_2020 <- cumprod(1 + VOX_returns_2020)
@@ -250,7 +264,7 @@ tan_cum_2020 <- cumprod(1 + tan_returns_2020)
 
 # Convert to time series
 VOX_cum_2020 <- xts(VOX_cum_2020, order.by = index(VOX_returns_2020))
-tan_cum_2020 <- xts(tan_cum_2020, order.by = index(returns_2020))
+tan_cum_2020 <- xts(tan_cum_2020, order.by = index(returns_2020[,-1]))
 ```
 
 ### Plots
@@ -462,9 +476,7 @@ Compared to 2017-2019, there are some similarities and some differences.
 While the Betas for META, and NFLX all remain above 1, they decreased significantly, from 1.383 and 1.709 to 1.089 and 1.107 respectively. 
 The Beta for GOOG also changed, jumping from 0.998, below 1, to 1.112, greater than 1. 
 The Beta for VOX also changed to be greater than 1. VOX has the biggest difference, as it now no longer has a statistically significant alpha.
-Interestingly, unlike in 2017-2019, the Beta for the tangency portfolio is lower than any of the sub-components. 
-
-#TODO: no idea what else to write.
+Interestingly, unlike in 2017-2019, the Beta for the tangency portfolio is lower than two of the three sub-components. The betas also varied a lot more in 2017-2019.
 
 
 ## Question 7
@@ -495,6 +507,15 @@ colnames(all_var_es) = c("GOOG", "META", "NFLX", "VOX")
 all_var_es
 ```
 
+Looking at the VaR and ES table, we see that they are quite high. For example, you can expect to lose
+at most \$39, or 3.9% of your position in NFLX on any day, with a 95% confidence. 
+Also, the VaR and ES are higher for assets we concluded to be riskier (looking at standard deviation).
+We also see that the VaR and ES are higher for the individual assets than VOX as a whole, showing the effects of lower diversification.
+
+Furthermore, we see that the ES is much higher than the VaR for each asset (and the industry as a whole), indicating
+that there are rather heavy tails. In particular, the ES for Netflix is significantly higher than the VaR, suggesting that extreme losses 
+are more frequent.
+
 ## Question 8
 *Estimate and report the daily VaR and ES for the individual companies and the
 overall industry at 5% levels of significance using the non-parametric method
@@ -511,13 +532,18 @@ colnames(all_var_es_new) = c("GOOG", "META", "NFLX", "VOX")
 all_var_es_new
 ```
 
+Both the VaR and ES values increased by a notable amount from the 2017-2019 period to the 2020-2022 period for each company.
+This increase in risk is also reflected in the VOX values, indicating the increase in values is at least partially due to a change affecting the
+entire industry (not just individual companies). This could be related to the pandemic and a change in the population's media consumption following
+the pandemic and normal activities resumed. The pandemic triggered massive growth in services like streaming. However, it also caused an increase in competition, leading to a potentially oversaturated market. This also could've contribued to the observed increased in risk.
+
+Facebook's rebranding to Meta in October 2021 and Meta's corresponding direction shift, lead to a highly volatile stock price over the next few years.
+As a result, of the individual companies, Meta's VaR and ES values increased the most proportionally. 
 
 ## Question 9
 *Comment on your findings overall, meaning using portfolio optimization, 
 market betas, and the tail risk, and complement with any research/news you found
 online. Note 2020-2021 were pandemic years.*
-
-# TODO: add to this.
 
 Overall, each of the three companies we chose outperformed the industry. This was shown through the cumulative returns and the respective betas, as each component stock had a beta near or greater than 1. So, it makes sense that the efficient portfolio combining the three also outperformed the industry, and also had a beta greater than 1. 
 The optimized portfolio also had a higher sharpe ratio than any of its component stocks, and higher than the industry. 
