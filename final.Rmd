@@ -142,12 +142,10 @@ ratios).*
 We are using the 1-month treasury bills as the risk-free rate.
 
 ```{r}
-trading_days <- nrow(returns)
-
 rf_annual <- mean(tbill1mo)
-rf <- rf_annual / trading_days / 100
+rf <- rf_annual / 360 / 100
 Sigma = cov(returns[,-1])
-```
+``` 
 
 ### Calculate the tangency portfolio
 ```{r}
@@ -191,12 +189,12 @@ colnames(sr) = c("Sharpe Ratios")
 round(sr*100,3)
 ```
 ### Analysis
-Looking at the individuals stocks, we see that Netflix has the highest Sharpe Ratio of 6.370,
+Looking at the individuals stocks, we see that Netflix has the highest Sharpe Ratio of 6.271,
 and thus has the most attractive risk-adjusted return. However, Google and Meta are not far
-behind at 5.415 and 4.884. Thus, the tangential portfolio puts the highest weight on NFLX, but
+behind at 5.256 and 4.757. Thus, the tangential portfolio puts the highest weight on NFLX, but
 still a significant proportion in the others. All of them are above 3 and thus very good stocks to invest in.
-The Sharpe Ratio of the tangency portfolio is higher than each individual stock, at 6.873. This is much
-higher than the Sharpe Ratio of VOX, which is at -0.054.
+The Sharpe Ratio of the tangency portfolio is higher than each individual stock, at 6.734. This is much
+higher than the Sharpe Ratio of VOX, which is at -0.284.
 We also see that the returns are quite high, at 0.1%, 0.1%, and 0.2% per trading day for
 GOOG, META, NFLX respectively. The standard deviations however, are also higher, at 1.5%, 1.8%, 2.3%, respectively,
 indicating a rather high risk as well.
@@ -298,7 +296,7 @@ The pandemic caused a significant growth in streaming, as movie theaters closed.
 This led to many companies creating their own streaming platforms, which eroded the industry dominance of Netflix.
 The pandemic can be seen as a black swan for Netflix, as it led to a far more competitive industry,
 causing Netflix to lose 51% over the year 2022. As the tangency portfolio weights Netflix more than VOX
-(47.4% vs. 4.55%), the black swan affects the tangency portfolio far more.
+(48.6% vs. 4.55%), the black swan affects the tangency portfolio far more.
 
 ## Question 5
 
