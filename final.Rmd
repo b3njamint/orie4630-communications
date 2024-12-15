@@ -286,9 +286,6 @@ The pandemic can be seen as a black swan for Netflix, as it led to a far more co
 causing Netflix to lose 51% over the year 2022. As the tangency portfolio weights Netflix more than VOX
 (47.4% vs. 4.55%), the black swan affects the tangency portfolio far more.
 
-# TODO: Is this sufficient? Might be useful to analyze excess returns or sharpe ratios (?)
-# TODO: Tried to add analysis for the 2021 drop, its mostly Netflix losing 60% that quarter
-
 ## Question 5
 
 *Use CAPM to estimate the alphas and betas for the individual companies, your
@@ -377,9 +374,6 @@ The tangency portfolio also has an insignificant alpha. However, it appears VOX 
 The Beta coefficient for GOOG shows that it has a similar systematic risk to the market, while the Betas for 
 META and NFLX both show higher systematic risk compared to the market. VOX has a beta less than 1, implying a lower systemic risk in relation to the market.
 The tangency protfolio has a beta greater than 1 as well, which is expected, as is is comprised of long-only positions of three stocks with beta greater than 1.
-
-# TODO: Anything else? Not sure what else to say
-
 
 ## Question 6
 *Use CAPM to estimate the betas for the individual companies, your con-
@@ -494,9 +488,10 @@ calc_var_es <- function(alpha, ret) {
 goog_var_es = calc_var_es(0.05, dailyReturn(goog))
 meta_var_es = calc_var_es(0.05, dailyReturn(meta))
 nflx_var_es = calc_var_es(0.05, dailyReturn(nflx))
-all_var_es = matrix(c(goog_var_es["var"], meta_var_es["var"], nflx_var_es["var"], goog_var_es["es"], meta_var_es["es"], nflx_var_es["es"]), 2, 3)
+vox_var_es = calc_var_es(0.05, dailyReturn(vox))
+all_var_es = matrix(c(goog_var_es["var"], meta_var_es["var"], nflx_var_es["var"], vox_var_es["var"], goog_var_es["es"], meta_var_es["es"], nflx_var_es["es"], vox_var_es["es"]), 2, 4, byrow=TRUE)
 rownames(all_var_es) = c("VaR", "ES")
-colnames(all_var_es) = c("GOOG", "META", "NFLX")
+colnames(all_var_es) = c("GOOG", "META", "NFLX", "VOX")
 all_var_es
 ```
 
@@ -509,17 +504,28 @@ the findings for 2017-2019*
 goog_var_es_new = calc_var_es(0.05, dailyReturn(goog_new))
 meta_var_es_new = calc_var_es(0.05, dailyReturn(meta_new))
 nflx_var_es_new = calc_var_es(0.05, dailyReturn(nflx_new))
-all_var_es_new = matrix(c(goog_var_es_new["var"], meta_var_es_new["var"], nflx_var_es_new["var"], goog_var_es_new["es"], meta_var_es_new["es"], nflx_var_es_new["es"]), 2, 3)
+vox_var_es_new = calc_var_es(0.05, dailyReturn(vox_new))
+all_var_es_new = matrix(c(goog_var_es_new["var"], meta_var_es_new["var"], nflx_var_es_new["var"], vox_var_es_new["var"], goog_var_es_new["es"], meta_var_es_new["es"], nflx_var_es_new["es"], vox_var_es_new["es"]), 2, 4, byrow=TRUE)
 rownames(all_var_es_new) = c("VaR", "ES")
-colnames(all_var_es_new) = c("GOOG", "META", "NFLX")
+colnames(all_var_es_new) = c("GOOG", "META", "NFLX", "VOX")
 all_var_es_new
 ```
 
-#TODO: need to verify this is correct, changed inputs from price to return for 7/8
 
 ## Question 9
 *Comment on your findings overall, meaning using portfolio optimization, 
 market betas, and the tail risk, and complement with any research/news you found
 online. Note 2020-2021 were pandemic years.*
 
-# TODO: 
+# TODO: add to this.
+
+Overall, each of the three companies we chose outperformed the industry. This was shown through the cumulative returns and the respective betas, as each component stock had a beta near or greater than 1. So, it makes sense that the efficient portfolio combining the three also outperformed the industry, and also had a beta greater than 1. 
+The optimized portfolio also had a higher sharpe ratio than any of its component stocks, and higher than the industry. 
+
+The tail risk aspect of the project is illuminating, as it demonstrates the effect of a global market event on risk models. 
+The VaR and ES of all three stocks and VOX all increased in the pandemic, as the risks were far greater than in 2017-2019. 
+The returns and tail risk also accurately show how certain events affected companies. For example, the pandemic was good for Netflix, creating a large growth in subscriber counts.
+However, the pandemic also brought in more competition for Netflix, and when lockdowns ended, Netflix emerged in a far more competitive landscape. 
+This was reflected in the stock price, and also reflected in the tail risk metrics. The VaR and ES both spiked for Netflix in 2020-22, compared to 2017-19, and the Beta for Netflix also plummeted, as the returns for Netflix in late 2021 and early 2022 were very negative. 
+
+
