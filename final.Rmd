@@ -413,7 +413,7 @@ names(rm_new) = c("mkt")
 tbill1mo_new= getSymbols("DGS1MO", from = "2020-01-01", to = "2022-12-31", src="FRED", auto.assign = FALSE)
 names(tbill1mo_new) = tolower(names(tbill1mo_new))
 tbill1mo_new = na.omit(tbill1mo_new[,'dgs1mo'])
-rf_new = tbill1mo_new*30/(360*100)
+rf_new = tbill1mo_new/(360*100)
 names(rf_new) = c("rf")
 
 ri_goog_new = dailyReturn(goog_new$goog.adjusted, type = "arithmetic")
