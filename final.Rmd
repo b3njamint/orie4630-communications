@@ -483,7 +483,7 @@ vox_var_es = calc_var_es(0.05, dailyReturn(vox))
 all_var_es = matrix(c(goog_var_es["var"], meta_var_es["var"], nflx_var_es["var"], vox_var_es["var"], goog_var_es["es"], meta_var_es["es"], nflx_var_es["es"], vox_var_es["es"]), 2, 4, byrow=TRUE)
 rownames(all_var_es) = c("VaR", "ES")
 colnames(all_var_es) = c("GOOG", "META", "NFLX", "VOX")
-all_var_es
+round(all_var_es,3)
 ```
 
 Looking at the VaR and ES table, we see that they are quite high. For example, you can expect to lose
@@ -508,7 +508,7 @@ vox_var_es_new = calc_var_es(0.05, dailyReturn(vox_new))
 all_var_es_new = matrix(c(goog_var_es_new["var"], meta_var_es_new["var"], nflx_var_es_new["var"], vox_var_es_new["var"], goog_var_es_new["es"], meta_var_es_new["es"], nflx_var_es_new["es"], vox_var_es_new["es"]), 2, 4, byrow=TRUE)
 rownames(all_var_es_new) = c("VaR", "ES")
 colnames(all_var_es_new) = c("GOOG", "META", "NFLX", "VOX")
-all_var_es_new
+round(all_var_es_new,3)
 ```
 
 Both the VaR and ES values increased by a notable amount from the 2017-2019 period to the 2020-2022 period for each company.
