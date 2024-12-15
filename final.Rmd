@@ -33,9 +33,15 @@ getSymbols("META", from = "2017-01-01", to = "2019-12-31")
 getSymbols("NFLX", from = "2017-01-01", to = "2019-12-31")
 
 # risk free rate (1-month treasury bill)
-tbill1mo= getSymbols("DGS1MO", from = "2017-01-01", to = "2019-12-31", src="FRED", auto.assign = FALSE)
+tbill1mo = getSymbols("DGS1MO", from = "2017-01-01", to = "2019-12-31", src="FRED", auto.assign = FALSE)
 names(tbill1mo) = tolower(names(tbill1mo))
-tbill1mo= na.omit(tbill1mo[,'dgs1mo'])
+tbill1mo = na.omit(tbill1mo[,'dgs1mo'])
+tbill1mo = tbill1mo / (360 * 100)
+
+tbill1mo_2020 = getSymbols("DGS1MO", from = "2020-01-01", to = "2022-12-31", src="FRED", auto.assign = FALSE)
+names(tbill1mo_2020) = tolower(names(tbill1mo_2020))
+tbill1mo_2020 = na.omit(tbill1mo_2020[,'dgs1mo'])
+tbill1mo_2020 = tbill1mo_2020 / (360 * 100)
 ```
 ## Question 1
 
@@ -61,7 +67,6 @@ NFLX_returns <- dailyReturn(NFLX$NFLX.Adjusted, type = "arithmetic")[-1]
 
 returns <- merge(VOX_returns, GOOG_returns, META_returns, NFLX_returns)
 colnames(returns) <- c("VOX", "GOOG", "META", "NFLX")
-head(returns)
 
 VOX_cum <- cumprod(1 + VOX_returns)
 GOOG_cum <- cumprod(1 + GOOG_returns)
@@ -115,11 +120,21 @@ NFLX_returns_2020 <- dailyReturn(NFLX_new$NFLX.Adjusted, type = "arithmetic")[-1
 returns_2020 <- merge(VOX_returns_2020, GOOG_returns_2020, META_returns_2020, NFLX_returns_2020)
 colnames(returns_2020) <- c("VOX", "GOOG", "META", "NFLX")
 
+returns_diff <- merge(VOX_returns$daily.returns - tbill1mo$dgs1mo, GOOG_returns$daily.returns - tbill1mo$dgs1mo, META_returns$daily.returns - tbill1mo$dgs1mo, NFLX_returns$daily.returns - tbill1mo$dgs1mo)
+colnames(returns_diff) <- c("VOX", "GOOG", "META", "NFLX")
+returns_diff_2020 <- merge(VOX_returns_2020$daily.returns - tbill1mo_2020$dgs1mo, GOOG_returns_2020$daily.returns - tbill1mo_2020$dgs1mo, META_returns_2020$daily.returns - tbill1mo_2020$dgs1mo, NFLX_returns_2020$daily.returns - tbill1mo_2020$dgs1mo)
+colnames(returns_diff_2020) <- c("VOX", "GOOG", "META", "NFLX")
+
 # calculate mean, sd by period
 mu.vec <- colMeans(returns, na.rm = TRUE)
 sd.vec <- apply(returns, 2, sd, na.rm = TRUE)
 mu2020.vec <- colMeans(returns_2020, na.rm = TRUE)
 sd2020.vec <- apply(returns_2020, 2, sd, na.rm = TRUE)
+
+mu_diff.vec <- colMeans(returns_diff, na.rm = TRUE)
+sd_diff.vec <- apply(returns_diff, 2, sd, na.rm = TRUE)
+mu2020_diff.vec <- colMeans(returns_diff_2020, na.rm = TRUE)
+sd2020_diff.vec <- apply(returns_diff_2020, 2, sd, na.rm = TRUE)
 
 mu_table = cbind(round(mu.vec,3), round(mu2020.vec,3))
 colnames(mu_table) <- c("2017-2019", "2020-2022")
@@ -127,6 +142,7 @@ cat("Mean of Daily Returns, by Time Period (2017-2019, 2020-2022):\n")
 mu_table
 
 sd_table <- cbind(round(sd.vec,3), round(sd2020.vec,3))
+
 colnames(sd_table) <- c("2017-2019", "2020-2022")
 cat("Standard Deviation of Daily Returns, by Time Period (2017-2019, 2020-2022):\n")
 sd_table
@@ -141,18 +157,15 @@ ratios).*
 
 We are using the 1-month treasury bills as the risk-free rate.
 
-```{r}
-rf_annual <- mean(tbill1mo)
-rf <- rf_annual / 360 / 100
-Sigma = cov(returns[,-1])
-``` 
-
 ### Calculate the tangency portfolio
 ```{r}
-num = solve(Sigma)%*%(mu.vec[-1]-rf)
-den = as.numeric(t(rep(1,3))%*%solve(Sigma)%*%(mu.vec[-1]-rf))
+Sigma = cov(returns[,-1])
+
+num = solve(Sigma)%*%(mu_diff.vec[-1])
+den = as.numeric(t(rep(1,3))%*%solve(Sigma)%*%(mu_diff.vec[-1]))
 tan.vec = num/den
 mu_tan = as.numeric(crossprod(tan.vec, mu.vec[-1]))
+mu_tan_diff = as.numeric(crossprod(tan.vec, mu_diff.vec[-1]))
 sd_tan = sqrt(as.numeric(t(tan.vec)%*%Sigma%*%tan.vec))
 
 tanpf = rbind(mu_tan, sd_tan, tan.vec)
@@ -174,67 +187,35 @@ Am.mat = rbind(top.mat, bot.vec)
 b.vec = c(rep(0, 3), 1)
 zm.mat = solve(Am.mat)%*%b.vec
 wmin.vec = zm.mat[1:3,1]
-mu_min = as.numeric(crossprod(wmin.vec, mu.vec[-1]))
+mu_min = as.numeric(crossprod(wmin.vec, mu_diff.vec[-1]))
 sd_min = sqrt(as.numeric(t(wmin.vec)%*%Sigma%*%wmin.vec))
 
-SR_VOX = (mu.vec[1]-rf)/sd.vec[1]
-SR_GOOG = (mu.vec[2]-rf)/sd.vec[2]
-SR_META = (mu.vec[3]-rf)/sd.vec[3]
-SR_NFLX = (mu.vec[4]-rf)/sd.vec[4]
-SR_min = (mu_min-rf)/sd_min
-SR_tan = (tanpf[1] - rf)/tanpf[2]
+SR_VOX = (mu_diff.vec[1])/sd.vec[1]
+SR_GOOG = (mu_diff.vec[2])/sd.vec[2]
+SR_META = (mu_diff.vec[3])/sd.vec[3]
+SR_NFLX = (mu_diff.vec[4])/sd.vec[4]
+SR_min = (mu_min)/sd_min
+SR_tan = (mu_tan_diff)/tanpf[2]
 sr = rbind(SR_VOX, SR_GOOG,SR_META, SR_NFLX, SR_min, SR_tan)
 rownames(sr) = c("SR_VOX", "SR_GOOG","SR_META", "SR_NFLX", "SR min var", "SR tangency")
 colnames(sr) = c("Sharpe Ratios")
 round(sr*100,3)
 ```
 ### Analysis
-Looking at the individuals stocks, we see that Netflix has the highest Sharpe Ratio of 6.271,
+Looking at the individuals stocks, we see that Netflix has the highest Sharpe Ratio of 6.458,
 and thus has the most attractive risk-adjusted return. However, Google and Meta are not far
-behind at 5.256 and 4.757. Thus, the tangential portfolio puts the highest weight on NFLX, but
+behind at 5.686 and 5.039. Thus, the tangential portfolio puts the highest weight on NFLX, but
 still a significant proportion in the others. All of them are above 3 and thus very good stocks to invest in.
-The Sharpe Ratio of the tangency portfolio is higher than each individual stock, at 6.734. This is much
-higher than the Sharpe Ratio of VOX, which is at -0.284.
+The Sharpe Ratio of the tangency portfolio is higher than each individual stock, at 7.046. This is much
+higher than the Sharpe Ratio of VOX, which is at 0.042.
 We also see that the returns are quite high, at 0.1%, 0.1%, and 0.2% per trading day for
 GOOG, META, NFLX respectively. The standard deviations however, are also higher, at 1.5%, 1.8%, 2.3%, respectively,
-indicating a rather high risk as well.
+indicating a rather high risk as well, especially for NFLX.
 
 The tangency porfolio performs quite well, averaging 0.1% growth per trading day but with a
-high standard deviation of 1.7%. Compared to the VOX, which averages a much lower 0.002% growth per trading day
+high standard deviation of 1.6%. Compared to the VOX, which averages a much lower 0.002% growth per trading day
 and with a smaller standard deviation of 1.0%. VOX is a safer investment for sure, but gives much worse
 expected returns, even when adjusted for risk.
-
-```{r}
-#markowitz bullet with goog, meta, nflx
-n_pf = 5000
-set.seed(12345)
-w_goog = rnorm(n_pf)
-w_meta = rnorm(n_pf)
-w_nflx = 1 - w_goog - w_meta
-w = rbind(w_goog, w_meta, w_nflx)
-rownames(w) = asset.names = c("GOOG", "META", "NFLX")
-mu_p=matrix(NA,n_pf)
-sd_p=matrix(NA,n_pf)
-for (i in 1:n_pf) {
-  mu_p[i] = t(w[,i])%*%mu.vec[2:4]
-  sd_p[i] = sqrt(t(w[,i])%*%Sigma%*%w[,i])
-  i=i+1
-}
-ymax =1.2*max(mu_p)
-ymin =1.2*min(mu_p)
-xmax= max(sd_p)
-cex.val = 0.5
-plot(sd_p, mu_p,ylim=c(ymin, ymax), xlim=c(-0.01, xmax),
-ylab=expression(mu[p]), xlab=expression(sigma[p]),
-pch=16, col="grey", cex=cex.val, cex.lab=1.5)
-points(sd.vec[2:4], mu.vec[2:4], pch=16, cex=1.5, lwd=2, col="blue")
-points(c(0), c(rf), pch=16, cex=1.5, lwd=2, col="red")
-points(sd_tan, mu_tan, pch=16, cex=1.5, lwd=2, col="green")
-text(c(sd.vec[2:4], 0, sd_tan), c(mu.vec[2:4], rf, mu_tan), labels=c(asset.names, "rf", "Tangency"), pos=c(1, 4, 4, 4, 2), cex = 1, col="black")
-title("Feasible pfs with GOOG, META and NFLX (no weight restrictions)")
-
-```
-
 
 ## Question 4
 
@@ -296,7 +277,7 @@ The pandemic caused a significant growth in streaming, as movie theaters closed.
 This led to many companies creating their own streaming platforms, which eroded the industry dominance of Netflix.
 The pandemic can be seen as a black swan for Netflix, as it led to a far more competitive industry,
 causing Netflix to lose 51% over the year 2022. As the tangency portfolio weights Netflix more than VOX
-(48.6% vs. 4.55%), the black swan affects the tangency portfolio far more.
+(44.5% vs. ~4.55%), the black swan affects the tangency portfolio far more.
 
 ## Question 5
 
